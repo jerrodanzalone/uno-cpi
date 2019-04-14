@@ -1113,10 +1113,10 @@ def registerCommPartner(request, uidb64, token):
             form = CommunityuserForm(data=request.POST, instance=user)
 
             if form.is_valid():
-                new_user = form.save()
+                new_user = form.save(commit=False)
                 new_user.set_password(form.cleaned_data['password'])
                 new_user.is_communitypartner = True
-                new_user.save()
+                new_user.save(commit=True)
 
                 update_session_auth_hash(request, user)
                 form.save()
