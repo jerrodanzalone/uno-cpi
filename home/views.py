@@ -12,10 +12,9 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_bytes
-from django.utils.http import urlsafe_base64_encode
 from .tokens import account_activation_token
 from django.contrib.auth import get_user_model, login, update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.forms import SetPasswordForm
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.core.mail import EmailMessage
@@ -1111,22 +1110,26 @@ def registerCommPartner(request, uidb64, token):
         user.save()
         community_partner = get_object_or_404(CommunityPartner, pk=user.pk)
         if request.method == 'POST':
-           form = CommunityPartnerUserCompleteRegistration(data=request.POST, instance=user)
-           if form.is_valid():
-               user = form.save(commit=False)
-               user.set_password(form.cleaned_data['password'])
-               user.is_active = True
-               user.is_communitypartner = True
-               user.save(commit=True)
-               return redirect('communitypartnerproject')
-           else:
-             form = CommunityPartnerUserCompleteRegistration(data=request.POST, instance=user)
-             return render(request, 'home/registration/registerCommunityPartner.html' , {'form': form ,
-                                                                                    'community_partner' : community_partner})
+            form = CommunityuserForm(data=request.POST, instance=user)
+
+            if form.is_valid():
+                new_user = form.save()
+                new_user.set_password(form.cleaned_data['password'])
+                new_user.is_communitypartner = True
+                new_user.save()
+
+                update_session_auth_hash(request, user)
+                form.save()
+                return render(request, 'home/communityuser_register_done.html', )
+            else:
+
+                return render(request, 'home/registration/registerCommunityPartner.html', {'form': form,
+                                                                                           'community_partner': community_partner})
         else:
-            form = CommunityPartnerUserCompleteRegistration(instance=user)
-        return render(request, 'home/registration/registerCommunityPartner.html' , {'form': form ,
-                                                                              'community_partner' : community_partner})
+
+            form = CommunityuserForm(instance=user)
+        return render(request, 'home/registration/registerCommunityPartner.html', {'form': form,
+                                                                                   'community_partner': community_partner})
     else:
         return render(request, 'home/registration/register_fail.html')
 
